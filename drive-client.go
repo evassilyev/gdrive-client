@@ -106,16 +106,18 @@ func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (fid strin
 	if err != nil {
 		return
 	}
-	if len(f.Files) == 0 {
-		newFile := &drive.File{
-			MimeType: "application/vnd.google-apps.folder",
-			Name:     name,
-			Parents:  []string{parentId},
-		}
-		newFile, err = ds.Files.Create(newFile).Do()
-		fid = newFile.Id
-	} else {
+	if len(f.Files) != 0 {
 		fid = f.Files[0].Id
 	}
+	newFile := &drive.File{
+		MimeType: "application/vnd.google-apps.folder",
+		Name:     name,
+		Parents:  []string{parentId},
+	}
+	newFile, err = ds.Files.Create(newFile).Do()
+	if err != nil {
+		return
+	}
+	fid = newFile.Id
 	return
 }
