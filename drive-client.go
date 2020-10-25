@@ -92,10 +92,30 @@ func NewDriveClient() *DriveService {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 	return &DriveService{
-		S: srv,
+		Service: srv,
 	}
 }
 
 type DriveService struct {
-	S *drive.Service
+	*drive.Service
+}
+
+func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (err error, fid string) {
+	var f *drive.FileList
+	f, err = ds.Files.List().Q(fmt.Sprintf("mimeType = 'application/vnd.google-apps.folder' and name = '%s'", name)).Do()
+	if err != nil {
+		return
+	}
+	if len(f.Files) == 0 {
+		newFile := &drive.File{
+			MimeType: "application/vnd.google-apps.folder",
+			Name:     name,
+			Parents:  []string{parentId},
+		}
+		newFile, err = ds.Files.Create(newFile).Do()
+		fid = newFile.Id
+	} else {
+		fid = f.Files[0].Id
+	}
+	return
 }
