@@ -100,7 +100,7 @@ type DriveService struct {
 	*drive.Service
 }
 
-func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (err error, fid string) {
+func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (fid string, err error) {
 	var f *drive.FileList
 	f, err = ds.Files.List().Q(fmt.Sprintf("mimeType = 'application/vnd.google-apps.folder' and name = '%s'", name)).Do()
 	if err != nil {
