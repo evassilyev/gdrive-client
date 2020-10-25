@@ -81,7 +81,7 @@ func NewDriveClient() *DriveService {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
 
-	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -102,12 +102,16 @@ type DriveService struct {
 
 func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (fid string, err error) {
 	var f *drive.FileList
-	f, err = ds.Files.List().Q(fmt.Sprintf("mimeType = 'application/vnd.google-apps.folder' and name = '%s'", name)).Do()
+	if parentId == "" {
+		parentId = "root"
+	}
+	f, err = ds.Files.List().Q(fmt.Sprintf("mimeType = 'application/vnd.google-apps.folder' and name = '%s' and '%s' in parents", name, parentId)).Do()
 	if err != nil {
 		return
 	}
 	if len(f.Files) != 0 {
 		fid = f.Files[0].Id
+		return
 	}
 	newFile := &drive.File{
 		MimeType: "application/vnd.google-apps.folder",
@@ -119,5 +123,32 @@ func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (fid strin
 		return
 	}
 	fid = newFile.Id
+	return
+}
+
+func (ds *DriveService) SaveImage(name, parentId string) (fid string, err error) {
+	file := &drive.File{
+		MimeType: "image/jpeg",
+		Name:     name,
+		Parents:  []string{parentId},
+	}
+	file, err = ds.Files.Create(file).Do()
+	if err != nil {
+		return
+	}
+	fid = file.Id
+	return
+}
+
+func (ds *DriveService) FileExists(name, parentId string) (exists bool, err error) {
+	var f *drive.FileList
+	if parentId == "" {
+		parentId = "root"
+	}
+	f, err = ds.Files.List().Q(fmt.Sprintf("name = '%s' and '%s' in parents", name, parentId)).Do()
+	if err != nil {
+		return
+	}
+	exists = len(f.Files) != 0
 	return
 }
