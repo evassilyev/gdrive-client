@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -93,19 +94,25 @@ func NewDriveClient() *DriveService {
 	}
 	return &DriveService{
 		Service: srv,
+		fomu:    &sync.Mutex{},
+		fimu:    &sync.Mutex{},
 	}
 }
 
 type DriveService struct {
 	*drive.Service
+	fomu *sync.Mutex
+	fimu *sync.Mutex
 }
 
 func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (fid string, err error) {
+	ds.fomu.Lock()
+	defer ds.fomu.Unlock()
 	var f *drive.FileList
 	if parentId == "" {
 		parentId = "root"
 	}
-	f, err = ds.Files.List().Q(fmt.Sprintf("mimeType = 'application/vnd.google-apps.folder' and name = '%s' and '%s' in parents", name, parentId)).Do()
+	f, err = ds.Files.List().Q(fmt.Sprintf("mimeType = 'application/vnd.google-apps.folder' and name = '%s' and '%s' in parents and trashed = false", name, parentId)).Do()
 	if err != nil {
 		return
 	}
@@ -152,11 +159,13 @@ func (ds *DriveService) SaveImage(name, parentId, link string) (fid string, err 
 }
 
 func (ds *DriveService) FileExists(name, parentId string) (exists bool, err error) {
+	ds.fimu.Lock()
+	defer ds.fimu.Unlock()
 	var f *drive.FileList
 	if parentId == "" {
 		parentId = "root"
 	}
-	f, err = ds.Files.List().Q(fmt.Sprintf("name = '%s' and '%s' in parents", name, parentId)).Do()
+	f, err = ds.Files.List().Q(fmt.Sprintf("name = '%s' and '%s' in parents and trashed = false", name, parentId)).Do()
 	if err != nil {
 		return
 	}
