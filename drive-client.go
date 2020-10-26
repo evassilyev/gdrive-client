@@ -126,13 +126,24 @@ func (ds *DriveService) CreateFolderIfNotExist(name, parentId string) (fid strin
 	return
 }
 
-func (ds *DriveService) SaveImage(name, parentId string) (fid string, err error) {
+func (ds *DriveService) SaveImage(name, parentId, link string) (fid string, err error) {
+	if parentId == "" {
+		parentId = "root"
+	}
 	file := &drive.File{
 		MimeType: "image/jpeg",
 		Name:     name,
 		Parents:  []string{parentId},
 	}
-	file, err = ds.Files.Create(file).Do()
+	var resp *http.Response
+	resp, err = http.Get(link)
+	if err != nil {
+		return
+	}
+	defer func() {
+		err = resp.Body.Close()
+	}()
+	file, err = ds.Files.Create(file).Media(resp.Body).Do()
 	if err != nil {
 		return
 	}
