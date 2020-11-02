@@ -158,6 +158,23 @@ func (ds *DriveService) SaveImage(name, parentId, link string) (fid string, err 
 	return
 }
 
+func (ds *DriveService) CreateSpreadsheet(name, parentId string) (fid string, err error) {
+	if parentId == "" {
+		parentId = "root"
+	}
+	file := &drive.File{
+		MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		Name:     name,
+		Parents:  []string{parentId},
+	}
+	file, err = ds.Files.Create(file).Do()
+	if err != nil {
+		return
+	}
+	fid = file.Id
+	return
+}
+
 func (ds *DriveService) FileExists(name, parentId string) (exists bool, err error) {
 	ds.fimu.Lock()
 	defer ds.fimu.Unlock()
