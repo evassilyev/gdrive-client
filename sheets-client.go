@@ -7,6 +7,7 @@ import (
 	"google.golang.org/api/sheets/v4"
 	"io/ioutil"
 	"log"
+	"sync"
 )
 
 func NewSheetsClient() *SheetsService {
@@ -32,4 +33,49 @@ func NewSheetsClient() *SheetsService {
 
 type SheetsService struct {
 	*sheets.Service
+	createMu sync.Mutex
+}
+
+func (ss *SheetsService) CreateSheetIfNotExists(name, spreadsheetId string) (sheetId int64, err error) {
+
+	ss.createMu.Lock()
+	defer ss.createMu.Unlock()
+
+	var ssheet *sheets.Spreadsheet
+	ssheet, err = ss.Spreadsheets.Get(spreadsheetId).Do()
+	if err != nil {
+		return
+	}
+	for _, sheet := range ssheet.Sheets {
+		if sheet.Properties.Title == name {
+			sheetId = sheet.Properties.SheetId
+			return
+		}
+	}
+	requests := []*sheets.Request{
+		{
+			AddSheet: &sheets.AddSheetRequest{
+				Properties: &sheets.SheetProperties{
+					Title: name,
+				},
+			},
+		},
+	}
+
+	var resp *sheets.BatchUpdateSpreadsheetResponse
+	resp, err = ss.Spreadsheets.BatchUpdate(spreadsheetId, &sheets.BatchUpdateSpreadsheetRequest{
+		IncludeSpreadsheetInResponse: true,
+		Requests:                     requests,
+	}).Do()
+	if err != nil {
+		return
+	}
+	for _, sheet := range resp.UpdatedSpreadsheet.Sheets {
+		if sheet.Properties.Title == name {
+			sheetId = sheet.Properties.SheetId
+			return
+		}
+	}
+	sheetId = -1
+	return
 }
