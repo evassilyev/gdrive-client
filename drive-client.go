@@ -163,7 +163,7 @@ func (ds *DriveService) CreateSpreadsheet(name, parentId string) (fid string, er
 		parentId = "root"
 	}
 	file := &drive.File{
-		MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		MimeType: "application/vnd.google-apps.spreadsheet",
 		Name:     name,
 		Parents:  []string{parentId},
 	}
@@ -175,7 +175,7 @@ func (ds *DriveService) CreateSpreadsheet(name, parentId string) (fid string, er
 	return
 }
 
-func (ds *DriveService) FileExists(name, parentId string) (exists bool, err error) {
+func (ds *DriveService) FileExists(name, parentId string) (exists bool, id string, err error) {
 	ds.fimu.Lock()
 	defer ds.fimu.Unlock()
 	var f *drive.FileList
@@ -187,5 +187,8 @@ func (ds *DriveService) FileExists(name, parentId string) (exists bool, err erro
 		return
 	}
 	exists = len(f.Files) != 0
+	if exists {
+		id = f.Files[0].Id
+	}
 	return
 }
