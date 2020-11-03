@@ -36,6 +36,36 @@ type SheetsService struct {
 	createMu sync.Mutex
 }
 
+// TODO fix bug there!
+func (ss *SheetsService) InsertRow(spreadsheetId string, sheetId int64, values []string) (err error) {
+	var vs []*sheets.CellData
+	for _, v := range values {
+		vs = append(vs, &sheets.CellData{
+			UserEnteredValue: &sheets.ExtendedValue{
+				StringValue: &v,
+			},
+		})
+	}
+	rws := []*sheets.RowData{{
+		Values: vs,
+	},
+	}
+
+	requests := []*sheets.Request{
+		{
+			AppendCells: &sheets.AppendCellsRequest{
+				SheetId: sheetId,
+				Rows:    rws,
+				Fields:  "*",
+			},
+		},
+	}
+	_, err = ss.Spreadsheets.BatchUpdate(spreadsheetId, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: requests,
+	}).Do()
+	return
+}
+
 func (ss *SheetsService) CreateSheetIfNotExists(name, spreadsheetId string) (sheetId int64, err error) {
 
 	ss.createMu.Lock()
