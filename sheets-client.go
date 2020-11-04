@@ -40,9 +40,10 @@ type SheetsService struct {
 func (ss *SheetsService) InsertRow(spreadsheetId string, sheetId int64, values []string) (err error) {
 	var vs []*sheets.CellData
 	for _, v := range values {
+		var val = v
 		vs = append(vs, &sheets.CellData{
 			UserEnteredValue: &sheets.ExtendedValue{
-				StringValue: &v,
+				StringValue: &val,
 			},
 		})
 	}
