@@ -36,7 +36,6 @@ type SheetsService struct {
 	createMu sync.Mutex
 }
 
-// TODO fix bug there!
 func (ss *SheetsService) InsertRow(spreadsheetId string, sheetId int64, values []string) (err error) {
 	var vs []*sheets.CellData
 	for _, v := range values {
